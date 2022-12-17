@@ -1,0 +1,31 @@
+* yugioh-card-query.el
+
+An Emacs plugin for the ygopro card database.
+
+[[file:demo.png]]
+
+* Installation
+
+*Requirement: Emacs >= 29.0*
+
+1. Cloning yugioh-card-query.el from Github to ~/.emacs.d:
+
+#+begin_example
+  $ cd ~/.emacs.d
+  $ git clone https://github.com/lu4nx/yugioh-card-query.el.git yugioh-card-query.el
+#+end_example
+
+2. Copying following codes to ~/.emacs or ~/.emacs.d/init.el:
+
+#+begin_src emacs-lisp
+  (add-to-list 'load-path "~/.emacs.d/yugioh-card-query.el")
+
+  ;; Set the directory path for pics
+  (defvar ygo-pictures-path "/opt/ygopro/pics")
+  ;; Set the path for card database file
+  (defvar ygo-card-database "/opt/ygopro/cards.cdb")
+  (require 'yugioh-card-query)
+#+end_src
+
+* Usage
+M-x ygo-query-card, and inputting a card number or card name.
