@@ -17,7 +17,7 @@
 
 (defvar ygo-db-conn (sqlite-open ygo-card-database))
 
-(defun ygo-get-monster-race (race-code)
+(defun ygo--get-monster-race (race-code)
   (cl-case race-code
     (#x1ffffff "全种族")
     (#x1 "战士")
@@ -47,7 +47,7 @@
     (#x1000000 "电子界")
     (otherwise nil)))
 
-(defun ygo-get-attribute (attribute-code)
+(defun ygo--get-attribute (attribute-code)
   (cl-case attribute-code
     (#x01 "地")
     (#x02 "水")
@@ -58,7 +58,7 @@
     (#x40 "神")
     (otherwise nil)))
 
-(defun ygo-get-card-type (type-code)
+(defun ygo--get-card-type (type-code)
   (when type-code
     (let ((monster '((#x4000000 . "连接")
                      (#x2000000 . "特殊召唤")
@@ -81,10 +81,11 @@
                    (#x80 . "仪式")))
           (trap '((#x100000 . "反击")
                   (#x20000 . "永久")))
-          (type (cond ((not (= 0 (logand type-code #x1))) 'monster)
-                      ((not (= 0 (logand type-code #x2))) 'spell)
-                      ((not (= 0 (logand type-code #x4))) 'trap)
-                      (t nil))))
+          (type (cond
+                 ((not (= 0 (logand type-code #x1))) 'monster)
+                 ((not (= 0 (logand type-code #x2))) 'spell)
+                 ((not (= 0 (logand type-code #x4))) 'trap)
+                 (t nil))))
       (when type
         (let ((sub-type (seq-find (lambda (i)
                                     (= (car i) (logand type-code (car i))))
@@ -97,7 +98,7 @@
               (format "%s/%s" type-name (cdr sub-type))
             type-name))))))
 
-(defun ygo-query-db (number-or-name)
+(defun ygo--query-db (number-or-name)
   (car (sqlite-select ygo-db-conn
                       "select texts.id, texts.name, texts.desc, datas.type,
 datas.attribute, datas.level, datas.atk, datas.def, datas.race from texts, datas
@@ -106,7 +107,7 @@ where (texts.id=? or texts.name=?) and texts.id=datas.id"
 
 (defun ygo-query-card (number-or-name)
   (interactive "sCard number or name: ")
-  (let ((query-ret (ygo-query-db number-or-name)))
+  (let ((query-ret (ygo--query-db number-or-name)))
     (if query-ret
         (let ((new-buffer (generate-new-buffer (format "YGO %s" number-or-name))))
           (cl-multiple-value-bind (number name desc type attribute
@@ -115,12 +116,14 @@ where (texts.id=? or texts.name=?) and texts.id=datas.id"
               (insert-image (create-image (format "%s/%s.jpg"
                                                   ygo-pictures-path number)))
               (insert (format "\n\n%s（%s）\n" name number))
-              (insert (format "\n【%s】\n" (ygo-get-card-type type)))
-              (when (and (not (string-equal (ygo-get-card-type type) "魔法"))
-                         (not (string-equal (ygo-get-card-type type) "陷阱")))
-                (insert (format "\n等级：%d，%s族，属性：%s\n" level
-                                (ygo-get-monster-race race)
-                                (ygo-get-attribute attribute)))
+              (insert (format "\n【%s】\n" (ygo--get-card-type type)))
+              (unless (or (string-match "魔法" (ygo--get-card-type type))
+                          (string-match "陷阱" (ygo--get-card-type type)))
+                (message (ygo--get-card-type type))
+                (insert (format "\n等级：%d，%s族，属性：%s\n"
+                                level
+                                (ygo--get-monster-race race)
+                                (ygo--get-attribute attribute)))
                 (insert (format "\n攻击力：%d，防御：%d\n" atk def)))
               (insert (format "\n%s\n" desc))
               (switch-to-buffer new-buffer))))
